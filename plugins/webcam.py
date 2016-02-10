@@ -1,6 +1,5 @@
-from slackbot.bot import listen_to
 from slackbot.bot import respond_to
-from bot_utilities import Command
+from utilities import Command, slackasciiterminal
 import re
 
 @respond_to('ascii pic', re.IGNORECASE)
@@ -11,6 +10,6 @@ def takepic(message):
 
     # Read from the file
     with open('pic.txt', 'r') as picfile:
-        picture = '```' + picfile.read() + '```'
+        asciipicture = slackasciiterminal(picfile.read())
     # reply
-    message.reply(picture)
+    message.reply(asciipicture)

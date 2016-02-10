@@ -1,5 +1,6 @@
 import re
 import requests
+from utilities import slackasciiterminal
 from itertools import chain
 from prettytable import PrettyTable
 from slackbot.bot import respond_to
@@ -21,7 +22,7 @@ def gettable(items):
 
 
 @respond_to('lunch (.*)', re.IGNORECASE)
-def svlunch(message, something):
+def lunch(message, something):
     # internal mapping or sap cafes to ids
     def cafe_lookup(cafe):
         return {
@@ -31,6 +32,9 @@ def svlunch(message, something):
         }.get(cafe, 246)
 
     cafe = cafe_lookup(something)
+
+
+    # TODO implement cache (24hours) / in memory storage
     cafe_response = requests.get('http://legacy.cafebonappetit.com/api/2/menus?format=jsonp&cafe={!s}'.format(cafe))
     cafe_json = cafe_response.json()
 
@@ -59,6 +63,6 @@ def svlunch(message, something):
 
     table = gettable(cafe_lunch_items)
 
-    asciitable = '```' + table.get_string() + '```'
+    asciitable =  slackasciiterminal(table.get_string())
 
     message.reply(asciitable)
