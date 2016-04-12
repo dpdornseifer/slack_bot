@@ -8,6 +8,8 @@ def slackasciiterminal(msg):
     return '```' + msg + '```'
 
 
+
+
 class Command(object):
     """
     Enables to run subprocess commands in a different thread with TIMEOUT option.

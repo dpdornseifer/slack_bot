@@ -1,7 +1,7 @@
 # python 2.7 image
 FROM python:2.7
 
-
+# TODO make it generic
 ENV http_proxy http://proxy.wdf.sap.corp:8080
 ENV https_proxy https://proxy.wdf.sap.corp:8080
 

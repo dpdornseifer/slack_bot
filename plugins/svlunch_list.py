@@ -1,9 +1,15 @@
 import re
 import requests
+import datetime
 from utilities import slackasciiterminal
 from itertools import chain
 from prettytable import PrettyTable
+from slackbot.bot import settings
 from slackbot.bot import respond_to
+from slackbot.bot import logger
+
+# global data storage
+info_cache = {}
 
 
 def flatten(items_list):
@@ -21,28 +27,37 @@ def gettable(items):
     return table
 
 
+def getmenue_json(cafe_num):
+
+    global info_cache
+    today = datetime.date.today()
+
+    # if cache entry is older than 24 hours update it
+    if 'last_update' not in info_cache or info_cache['last_update'] < today:
+        cafe_response = requests.get(
+            'http://legacy.cafebonappetit.com/api/2/menus?format=jsonp&cafe={!s}'.format(cafe_num))
+        info_cache['json_rep'] = cafe_response.json()
+        info_cache['last_update'] = today
+
+    return info_cache['json_rep']
+
+
 @respond_to('lunch (.*)', re.IGNORECASE)
 def lunch(message, something):
+
     # internal mapping or sap cafes to ids
-    def cafe_lookup(cafe):
-        return {
-            'cafe_1': 246,
-            'cafe_3': 245,
-            'cafe_8': 247
-        }.get(cafe, 246)
+    def cafe_lookup(cafe_name):
+        return settings.CAFES.get(cafe_name, settings.CAFES_DEFAULT)
 
-    cafe = cafe_lookup(something)
+    cafe_num = cafe_lookup(something)
 
-
-    # TODO implement cache (24hours) / in memory storage
-    cafe_response = requests.get('http://legacy.cafebonappetit.com/api/2/menus?format=jsonp&cafe={!s}'.format(cafe))
-    cafe_json = cafe_response.json()
+    cafe_json = getmenue_json(cafe_num)
 
     # a little bit of json processing to get the necessary information
-    cafe_parts = cafe_json['days'][0]['cafes'][str(cafe)]
+    cafe_parts = cafe_json['days'][0]['cafes'][str(cafe_num)]
 
 
-    cafe_name = cafe_parts['name']
+    #cafe_name = cafe_parts['name']
     cafe_dayparts = cafe_parts['dayparts'][0]
 
     cafe_stations = [i['stations'] for i in cafe_dayparts if i['label'] == 'Lunch']
@@ -59,10 +74,12 @@ def lunch(message, something):
     # add the label, description and the price
     cafe_lunch_items = []
     for item in cafe_items:
-        cafe_lunch_items.append({'label': cafe_dayitems[item]['label'], 'description': cafe_dayitems[item]['description'][0:50], 'price':cafe_dayitems[item]['price']})
+        cafe_lunch_items.append({'label': cafe_dayitems[item]['label'],
+                                 'description': cafe_dayitems[item]['description'][0:50],
+                                 'price': cafe_dayitems[item]['price']})
 
     table = gettable(cafe_lunch_items)
 
-    asciitable =  slackasciiterminal(table.get_string())
+    asciitable = slackasciiterminal(table.get_string())
 
     message.reply(asciitable)
