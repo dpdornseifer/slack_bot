@@ -6,17 +6,19 @@ from itertools import chain
 from prettytable import PrettyTable
 from slackbot.bot import settings
 from slackbot.bot import respond_to
-from slackbot.bot import logger
+
 
 # global data storage
 info_cache = {}
 
 
 def flatten(items_list):
+    """ chain several lists to one """
     return list(chain.from_iterable(items_list))
 
 
 def gettable(items):
+    """ print items in form of an ascii table """
     table = PrettyTable(["Item", "Description", "Price"])
     table.align["Item"] = "l"
     table.align["Description"] = "l"
@@ -27,8 +29,8 @@ def gettable(items):
     return table
 
 
-def getmenue_json(cafe_num):
-
+def getmenu_json(cafe_num):
+    """ lookup the local cache if the today's menu is available otherwise get it from the web """
     global info_cache
     today = datetime.date.today()
 
@@ -47,22 +49,19 @@ def lunch(message, something):
 
     # internal mapping or sap cafes to ids
     def cafe_lookup(cafe_name):
+        """ do the lookup of cafe names to the cafe bonappetit internal codes """
         return settings.CAFES.get(cafe_name, settings.CAFES_DEFAULT)
 
     cafe_num = cafe_lookup(something)
 
-    cafe_json = getmenue_json(cafe_num)
+    cafe_json = getmenu_json(cafe_num)
 
     # a little bit of json processing to get the necessary information
     cafe_parts = cafe_json['days'][0]['cafes'][str(cafe_num)]
-
-
-    #cafe_name = cafe_parts['name']
     cafe_dayparts = cafe_parts['dayparts'][0]
-
     cafe_stations = [i['stations'] for i in cafe_dayparts if i['label'] == 'Lunch']
 
-    # filter out the grill std. items
+    # filter out the grill std. items and focus on the menus
     cafe_items = flatten([i['items'] for i in cafe_stations[0] if
                           i['label'] != "grill" and
                           i['label'] != "market grill" and
@@ -74,12 +73,11 @@ def lunch(message, something):
     # add the label, description and the price
     cafe_lunch_items = []
     for item in cafe_items:
-        cafe_lunch_items.append({'label': cafe_dayitems[item]['label'],
-                                 'description': cafe_dayitems[item]['description'][0:50],
+        cafe_lunch_items.append({'label': cafe_dayitems[item]['label'][:30],
+                                 'description': cafe_dayitems[item]['description'][:50],
                                  'price': cafe_dayitems[item]['price']})
 
     table = gettable(cafe_lunch_items)
-
     asciitable = slackasciiterminal(table.get_string())
 
     message.reply(asciitable)

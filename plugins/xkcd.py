@@ -21,24 +21,28 @@ def get_current_number():
     return info_cache['num']
 
 
+@respond_to('xkcd$', re.IGNORECASE)
+def xkcd2(message):
+    """ method overloading to have just one parameter """
+    xkcd1(message, 'latest')
+
+
 @respond_to('xkcd (.*)', re.IGNORECASE)
-def xkcd(message, something):
+def xkcd1(message, something):
 
     if something == 'random':
-        """ get random xkcd """
+        """ get random xkcd by picking a number between 1 and n """
         para = str(random.randrange(1, get_current_number())) + '/'
 
     elif something.isdigit():
         """ get specific xkcd number """
 
-        if something > get_current_number():
+        if int(something) > get_current_number():
             para = ''
         else:
             para = something + '/'
-
     else:
         para = ''
-
 
     url = 'http://xkcd.com/{}info.0.json'.format(para)
     response = requests.get(url)

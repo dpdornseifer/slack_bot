@@ -3,11 +3,10 @@ import subprocess
 import traceback
 import shlex
 
+
 # wrap the string into tripple quotes for slack
 def slackasciiterminal(msg):
     return '```' + msg + '```'
-
-
 
 
 class Command(object):
